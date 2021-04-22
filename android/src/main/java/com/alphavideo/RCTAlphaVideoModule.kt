@@ -55,7 +55,7 @@ class RCTAlphaVideoModule(private val reactContext: ReactApplicationContext) : R
     @ReactMethod
     fun clear() {
         RCTAlphaVideoManager.videoView.getMxVideoView().release()
-        RCTAlphaVideoManager.videoView.closeView()
+//        RCTAlphaVideoManager.videoView.closeView()
     }
 
     init {

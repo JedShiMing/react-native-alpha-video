@@ -26,9 +26,9 @@ class AlphaVideoView(private val _activity: Activity, private val _context: Reac
         return videoView
     }
 
-    fun closeView() {
-        removeView(videoView)
-    }
+//    fun closeView() {
+//        removeView(videoView)
+//    }
 
     companion object {
         private const val TAG = "AlphaVideoView"
