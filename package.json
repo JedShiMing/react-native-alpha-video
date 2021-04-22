@@ -2,12 +2,13 @@
   "name": "react-native-alpha-video",
   "title": "React Native Alpha Video",
   "version": "1.0.0",
-  "description": "TODO",
+  "description": "用带有alpha通道的视频实现透明动画效果",
   "main": "index.js",
   "files": [
     "README.md",
     "android",
     "index.js",
+    "index.d.ts",
     "ios",
     "react-native-alpha-video.podspec"
   ],
