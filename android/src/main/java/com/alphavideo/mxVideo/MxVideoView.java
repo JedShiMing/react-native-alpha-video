@@ -66,7 +66,7 @@ public class MxVideoView extends GLTextureView {
     private float videoAspectRatio = VIEW_ASPECT_RATIO;
 
     @ScaleType
-    private int mScaleType = CENTER_INSIDE;
+    private int mScaleType = CENTER_CROP;
 
     private MxRenderer renderer;
     private MediaPlayer mediaPlayer;
