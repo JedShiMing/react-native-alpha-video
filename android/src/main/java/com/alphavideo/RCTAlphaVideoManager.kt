@@ -10,6 +10,7 @@ import com.facebook.react.uimanager.annotations.ReactProp
 class RCTAlphaVideoManager : SimpleViewManager<AlphaVideoView>() {
     lateinit var context: ThemedReactContext
 
+
     // 事件名,这里写个enum方便循环
     enum class Events(private val mName: String) {
         //        EVENT_CODE_TYPES("codeTypes"),

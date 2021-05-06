@@ -158,6 +158,7 @@ public class MxVideoView extends GLTextureView {
                 onDataSourceSet(retriever);
             }
         } catch (Exception e) {
+            e.printStackTrace();
             logE(""+ e);
             postError("fileName "+fileName+e);
         }
@@ -446,7 +447,7 @@ public class MxVideoView extends GLTextureView {
             }
         }
 
-        logI("onMeasure: widthSize " + widthSize + " heightSize " + heightSize);
+        logI("onMeasure: widthSize " + widthSize + " heightSize " + heightSize + " mScaleType " + mScaleType);
         super.onMeasure(MeasureSpec.makeMeasureSpec(widthSize, widthMode),
                 MeasureSpec.makeMeasureSpec(heightSize, heightMode));
     }
