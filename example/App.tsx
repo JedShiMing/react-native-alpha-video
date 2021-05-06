@@ -24,7 +24,7 @@ const svgaList_net = [
 ]
 
 const svgaList_native = [
-  require('./assets/wwww.mp4')
+  AlphaVideoModule.getAssets(require('./assets/wwww.mp4'))
 ]
 
 const { width, height } = Dimensions.get('window')
@@ -59,7 +59,7 @@ const App = () => {
       <View style={styles.btnView}>
         <Button title={'预加载全部'} onPress={() => {
           // 预加载
-          AlphaVideoModule.advanceDownload(svgaList_net)
+          AlphaVideoModule.advanceDownload([...svgaList_net, ...svgaList_native])
         }} />
         <Button title={'网络1'} onPress={() => {
           // 预加载
@@ -75,7 +75,7 @@ const App = () => {
         }} />
         <Button title={'本地1'} onPress={() => {
           // 预加载
-          load(AlphaVideoModule.getAssets(svgaList_native[0]))
+          load(svgaList_native[0])
         }} />
       </View>
 
