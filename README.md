@@ -4,59 +4,133 @@
 
 `$ npm install react-native-alpha-video --save`
 
-### Mostly automatic installation
-
-`$ react-native link react-native-alpha-video`
-
-## 视图
-#### AlphaVideoView
-`AlphaVideoView用来渲染动画，扩展UIView`
-
-## 事件调用
-#### AlphaVideoModule
-##### 获取本地地址
-`AlphaVideoModule.getAssets(require('./wwww.mp4'))`
-
-##### 预加载缓存
-`AlphaVideoModule.advanceDownload(list)`
-## 属性
-`URL，或是本地 NSBundle.mainBundle / assets 文件--- string类型`
-#### source
-`是否循环播放,默认不循环--- bool类型`
-#### loop
-`是否静音,默认不静音--- bool类型`
-#### muted
-## 回调
-`视频播放完成后，回调`
-#### onDidPlayFinish
-## 事件
-##### 播放
-```javascript
-play:() => void
-```
-##### 暂停
-```javascript
-pause:() => void
-```
-##### 停止
-```javascript
-stop:() => void
-```
-##### 释放
-```javascript
-clear:() => void
-```
-#### 预加载
-```javascript
-advanceDownload(urls: Array<String>): void
-```
-
 ## Usage
 ```javascript
-import AlphaVideo from 'react-native-alpha-video';
 
-// TODO: What to do with the module?
-AlphaVideo;
+import React, { useEffect, useState } from 'react';
+import {
+  Button,
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from 'react-native';
+import { AlphaVideoModule, AlphaVideoView } from 'react-native-alpha-video';
+
+import {
+  Colors,
+} from 'react-native/Libraries/NewAppScreen';
+
+const svgaList_net = [
+  'https://github.com/JedShiMing/asstes/blob/master/demo_video.mp4?raw=true',
+  'https://github.com/JedShiMing/asstes/blob/master/plane_x264.mp4?raw=true',
+  'https://github.com/JedShiMing/asstes/blob/master/wheel.mp4?raw=true'
+]
+
+const svgaList_native = [
+  AlphaVideoModule.getAssets(require('./assets/wwww.mp4'))
+]
+
+const { width, height } = Dimensions.get('window')
+const kScreenW = width
+const kScreenH = height
+
+let alphaVideoRef: AlphaVideoView | null
+
+const App = () => {
+
+  const [url, setUrl] = useState('')
+  const [modal, setModal] = useState(false)
+
+  const isDarkMode = useColorScheme() === 'dark';
+
+  const backgroundStyle = {
+    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    flex: 1,
+  };
+
+  function load(url: any) {
+    alphaVideoRef?.clear()
+    setUrl(url)
+    setModal(true)
+  }
+
+  return (
+    <SafeAreaView style={backgroundStyle}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <Text style={{ alignSelf: 'center', fontSize: 30 }}>预加载需要科学上网</Text>
+      <Text style={{ alignSelf: 'center', fontSize: 30 }}>本地资源最好用release包测试</Text>
+      <View style={styles.btnView}>
+        <Button title={'预加载全部'} onPress={() => {
+          // 预加载
+          AlphaVideoModule.advanceDownload([...svgaList_net, ...svgaList_native])
+        }} />
+        <Button title={'网络1'} onPress={() => {
+          // 预加载
+          load(svgaList_net[0])
+        }} />
+        <Button title={'网络2'} onPress={() => {
+          // 预加载
+          load(svgaList_net[1])
+        }} />
+        <Button title={'网络3'} onPress={() => {
+          // 预加载
+          load(svgaList_net[2])
+        }} />
+        <Button title={'本地1'} onPress={() => {
+          // 预加载
+          load(svgaList_native[0])
+        }} />
+      </View>
+
+      <Modal transparent={true} visible={modal} >
+        <View style={{ backgroundColor: 'rgba(0,0,0,0.5)', flex: 1 }}>
+          {/* 用 modal && 是为了销毁svgaview */}
+          {
+            modal && <AlphaVideoView
+              ref={ref => (alphaVideoRef = ref)}
+              source={url}
+              loop={false}
+              onDidPlayFinish={() => {
+                console.log("播放完毕");
+                setModal(false)
+              }}
+            />
+          }
+        </View>
+
+
+      </Modal>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  btnView: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    position: 'absolute',
+    bottom: 50,
+    width: '100%',
+  },
+  button1: {
+    width: 100,
+    height: 40,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center'
+  }
+});
+
+export default App;
+
 ```
 ## 注意点
 iOS使用需要在项目中创建一个metal文件`filter.metal`文件内容
