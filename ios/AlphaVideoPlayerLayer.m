@@ -283,7 +283,12 @@ static NSOperationQueue *cacheQueue;
         }
         
         CIImage *outPutImage = [videoKernel applyWithExtent:inputImage.extent arguments:@[(id)inputImage,(id)maskImage]];
-        [request finishWithImage:outPutImage context:nil];
+        if (outPutImage == nil) {
+            NSError *error;
+            [request finishWithError:error];
+        } else {
+            [request finishWithImage:outPutImage context:nil];
+        }
     }];
     videoComposition.renderSize = videoSize;
     playItem.videoComposition = videoComposition;
