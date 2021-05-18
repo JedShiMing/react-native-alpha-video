@@ -471,8 +471,10 @@ public class MxVideoView extends GLTextureView {
             @Override
             public void surfacePrepared(Surface surface) {
                 isSurfaceCreated = true;
-                mediaPlayer.setSurface(surface);
-                surface.release();
+                if (mediaPlayer != null) {
+                  mediaPlayer.setSurface(surface);
+                  surface.release();
+                }
                 if (isDataSourceSet) {
                     prepareAndStartMediaPlayer();
                 }
