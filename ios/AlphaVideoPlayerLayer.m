@@ -408,9 +408,36 @@ static NSOperationQueue *cacheQueue;
     return YES;
 }
 
+- (NSString *)removeExtra:(NSString *)urlStr {
+//    NSString *urlStr = [[NSString alloc] initWithString:url.absoluteString];
+    NSURL *url = [NSURL URLWithString:urlStr];
+    NSString *query = [url query];
+    NSArray *paramArr = [query componentsSeparatedByString:@"&"];
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    for (NSString *param in paramArr) {
+        NSArray *cell = [param componentsSeparatedByString:@"="];
+        [params setValue:cell[1] forKey:cell[0]];
+    }
+    NSString *re = [self string:urlStr removesub:[params objectForKey:@"Expires"]];
+    NSString *rst = [self string:re removesub:[params objectForKey:@"security-token"]];
+    NSString *rs = [self string:rst removesub:[params objectForKey:@"Signature"]];
+    NSString *res = [self string:rs removesub:[params objectForKey:@"OSSAccessKeyId"]];
+    return res;
+}
+
+- (NSString *)string:(NSString *)str removesub:(NSString *)sub {
+    NSString *s = str;
+    if (sub) {
+        s = [str stringByReplacingOccurrencesOfString:sub withString:@""];
+    }
+    return s;
+}
+
+
 /// 对url进行加密生成key
 - (nonnull NSString *)cacheKey:(NSString *)URL {
-    return [self SHA256:URL];
+    NSString *url = [self removeExtra:URL];
+    return [self SHA256:url];
 }
 
 /// 查找沙盒路径
