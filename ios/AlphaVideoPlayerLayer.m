@@ -84,20 +84,16 @@ static NSOperationQueue *cacheQueue;
 - (void)setSource:(NSString *)source{
     if ([source isKindOfClass:[NSString class]] && ![source isEqualToString:@""] && source != nil) {
         if ([source hasPrefix:@"http://"] || [source hasPrefix:@"https://"]) {
-            NSURLRequest *URLRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:source] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:20.0];
-            if (URLRequest.URL == nil) {
-                return;
-            }
-            if ([[NSFileManager defaultManager] fileExistsAtPath:[self cacheDirectory:[self cacheKey:URLRequest.URL]]]) {
-                [self initLoadWithSource:[NSURL fileURLWithPath:[self cacheDirectory:[self cacheKey:URLRequest.URL]]]];
+            if ([[NSFileManager defaultManager] fileExistsAtPath:[self cacheDirectory:[self cacheKey:source]]]) {
+                [self initLoadWithSource:[NSURL fileURLWithPath:[self cacheDirectory:[self cacheKey:source]]]];
             } else {
                 dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
                     NSData *videoData = [NSData dataWithContentsOfURL:[NSURL URLWithString:source]];
                     if (videoData) {
                         if ([self ensureDirExistsWithPath:[[self cacheDirectoryPath] stringByAppendingPathComponent:@"alphaVideo"]]) {
                             // 写入沙盒数据
-                            [videoData writeToFile:[self cacheDirectory:[self cacheKey:URLRequest.URL]] atomically:YES];
-                            [self initLoadWithSource:[NSURL fileURLWithPath:[self cacheDirectory:[self cacheKey:URLRequest.URL]]]];
+                            [videoData writeToFile:[self cacheDirectory:[self cacheKey:source]] atomically:YES];
+                            [self initLoadWithSource:[NSURL fileURLWithPath:[self cacheDirectory:[self cacheKey:source]]]];
                         } else {
                             NSLog(@"文件目录不存在");
                         }
@@ -367,24 +363,30 @@ static NSOperationQueue *cacheQueue;
         cacheQueue = [NSOperationQueue new];
         cacheQueue.maxConcurrentOperationCount = 3;
     }
-    [cacheQueue addOperationWithBlock:^{
-        for (NSString *url in urls) {
-            if ([url hasPrefix:@"https://"] || [url hasPrefix:@"http://"]) {
-                NSData *videoData = [NSData dataWithContentsOfURL:[NSURL URLWithString:url]];
-                NSURLRequest *URLRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:NSURLRequestReturnCacheDataElseLoad timeoutInterval:20.0];
-                if (videoData) {
-                    if ([self ensureDirExistsWithPath:[[self cacheDirectoryPath] stringByAppendingPathComponent:@"alphaVideo"]]) {
-                        // 写入沙盒数据
-                        [videoData writeToFile:[self cacheDirectory:[self cacheKey:URLRequest.URL]] atomically:YES];
-                    } else {
-                        NSLog(@"文件目录不存在");
-                    }
-                } else {
-                    NSLog(@"视频数据不存在");
-                }
+    
+    for (NSString *url in urls) {
+        NSInvocationOperation *opertation = [[NSInvocationOperation alloc] initWithTarget:self selector:@selector(downloadTask:) object:url];
+        [cacheQueue addOperation:opertation];
+    }
+    
+}
+
+- (void)downloadTask:(NSString *)url{
+
+    if ([url hasPrefix:@"https://"] || [url hasPrefix:@"http://"]) {
+        
+        NSData *videoData = [NSData dataWithContentsOfURL:[NSURL URLWithString:url]];
+        if (videoData) {
+            if ([self ensureDirExistsWithPath:[[self cacheDirectoryPath] stringByAppendingPathComponent:@"alphaVideo"]]) {
+                // 写入沙盒数据
+                [videoData writeToFile:[self cacheDirectory:[self cacheKey:url]] atomically:YES];
+            } else {
+                NSLog(@"文件目录不存在");
             }
+        } else {
+            NSLog(@"视频数据不存在");
         }
-    }];
+    }
 }
 
 /// 获取沙盒路径
@@ -394,21 +396,21 @@ static NSOperationQueue *cacheQueue;
 
 /// 判断是否存在这个路径,没有就创建
 - (BOOL)ensureDirExistsWithPath:(NSString *)path {
-  BOOL isDir = NO;
-  NSError *error;
-  BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir];
-  if (!(exists && isDir)) {
-    [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error];
-    if (error) {
-      return NO;
+    BOOL isDir = NO;
+    NSError *error;
+    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:path isDirectory:&isDir];
+    if (!(exists && isDir)) {
+        [[NSFileManager defaultManager] createDirectoryAtPath:path withIntermediateDirectories:YES attributes:nil error:&error];
+        if (error) {
+            return NO;
+        }
     }
-  }
-  return YES;
+    return YES;
 }
 
 /// 对url进行加密生成key
-- (nonnull NSString *)cacheKey:(NSURL *)URL {
-    return [self SHA256:URL.absoluteString];
+- (nonnull NSString *)cacheKey:(NSString *)URL {
+    return [self SHA256:URL];
 }
 
 /// 查找沙盒路径
