@@ -85,10 +85,31 @@ object CacheUtil {
         return File(cacheDir).exists()
     }
 
+    private fun removeParam(url: String, vararg name: String): String {
+        var url = url
+        for (s in name) {
+            var reg: String = "&?$s=[^&]*"
+            // 使用replaceAll正则替换,replace不支持正则
+            url = url.replace(reg.toRegex(), "")
+        }
+        return url
+    }
+
+
+    private fun generateCacheKey(str: String): String {
+        var key: String = str
+        if (str.contains("Expires") || str.contains("OSSAccessKeyId") || str.contains("Signature") || str.contains("security\\-token")) {
+            key = removeParam(str, "Expires", "OSSAccessKeyId", "Signature", "security\\-token")
+            println("key : $key")
+        }
+        return key
+    }
+
 
     fun getCacheKey(string: String): String {
+        val key = generateCacheKey(string)
         val messageDigest = MessageDigest.getInstance("MD5")
-        messageDigest.update(string.toByteArray(charset("UTF-8")))
+        messageDigest.update(key.toByteArray(charset("UTF-8")))
         val digest = messageDigest.digest()
         var str = ""
         for (b in digest) {
