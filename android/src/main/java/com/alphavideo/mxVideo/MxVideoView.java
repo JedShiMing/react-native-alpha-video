@@ -369,12 +369,16 @@ public class MxVideoView extends GLTextureView {
 
     @SuppressWarnings("unused")
     public void seekTo(int msec) {
+      if(mediaPlayer!=null){
         mediaPlayer.seekTo(msec);
+      }
     }
 
     @SuppressWarnings("unused")
     public void setLooping(boolean looping) {
+      if(mediaPlayer!=null){
         mediaPlayer.setLooping(looping);
+      }
     }
 
     @SuppressWarnings("unused")
