@@ -563,7 +563,14 @@ public class MxVideoView extends GLTextureView {
                     onPreparedListener.onPrepared(mp);
                 }
             });
-            mediaPlayer.prepareAsync();
+            try {
+              mediaPlayer.prepareAsync();
+            }catch (IllegalStateException e){
+              e.printStackTrace();
+              if (onVideoEndedListener != null) {
+                onVideoEndedListener.onVideoEnded();
+              }
+            }
         }
     }
 }
