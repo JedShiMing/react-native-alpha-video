@@ -6,6 +6,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.util.*
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.Inflater
@@ -15,11 +16,13 @@ object CacheUtil {
 
     private val threadNum = AtomicInteger(0)
 
-    internal var threadPoolExecutor = Executors.newCachedThreadPool { r ->
-        Thread(r, "videoParser-Thread-${threadNum.getAndIncrement()}")
-    }
+//    internal var threadPoolExecutor = Executors.newCachedThreadPool { r ->
+//        Thread(r, "videoParser-Thread-${threadNum.getAndIncrement()}")
+//    }
+    internal var threadPoolExecutor: ExecutorService = Executors.newFixedThreadPool(5)
 
-    class FileDownloader {
+
+  class FileDownloader {
         // 解析
         fun resume(
             url: URL,
