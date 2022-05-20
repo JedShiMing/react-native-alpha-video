@@ -19,7 +19,7 @@ object CacheUtil {
 //    internal var threadPoolExecutor = Executors.newCachedThreadPool { r ->
 //        Thread(r, "videoParser-Thread-${threadNum.getAndIncrement()}")
 //    }
-    internal var threadPoolExecutor: ExecutorService = Executors.newFixedThreadPool(5)
+    internal var threadPoolExecutor: ExecutorService = Executors.newFixedThreadPool(2)
 
 
   class FileDownloader {
