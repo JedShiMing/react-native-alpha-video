@@ -11,10 +11,10 @@ object AlphaVideoParser {
      */
     fun playVideoFromUrl(url: String, isPlay: Boolean, callback: (path: String) -> Unit) {
         val cacheKey = CacheUtil.getCacheKey(url)
-        if (CacheUtil.isCacheKey(cacheKey)) {
+        if (CacheUtil.isCached(cacheKey)) {
             // 播放
             if (isPlay) {
-                callback(CacheUtil.findVideoFile(cacheKey).path)
+                callback(CacheUtil.findFileByCacheKey(cacheKey).path)
             } else {
                 callback("已缓存")
             }

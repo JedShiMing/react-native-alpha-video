@@ -5,7 +5,6 @@ import android.net.http.HttpResponseCache
 import com.facebook.react.bridge.*
 import com.alphavideo.util.CacheUtil
 import java.io.File
-import kotlin.math.log
 
 class RCTAlphaVideoModule(private val reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
     override fun getName(): String {
@@ -17,22 +16,17 @@ class RCTAlphaVideoModule(private val reactContext: ReactApplicationContext) : R
      */
     @ReactMethod
     fun advanceDownload(urls: ReadableArray?) {
-//        println("预加载 == ${urls?.size()}")
         if (urls != null && urls.size() > 0) {
-            if (CacheUtil.isDir()) {
-                val list = urls.toArrayList()
-                for (url in list) {
-                    if (url.toString().startsWith("http")) {
-                        Thread(Runnable {
-                            AlphaVideoParser.playVideoFromUrl(url.toString(), false) {
-                                println("$url  缓存成功")
-                            }
-                        }).start()
+            if (!CacheUtil.isDirExists()) {
+                CacheUtil.init(reactContext)
+            }
+            urls?.toArrayList()?.forEach { it ->
+//                println("预缓存alpha video url : $it")
+                if (it.toString().startsWith("http")) {
+                    AlphaVideoParser.playVideoFromUrl(it.toString(), false) {
+                        println("$it  缓存成功")
                     }
                 }
-            } else {
-                CacheUtil.onCreate(reactContext)
-                advanceDownload(urls)
             }
         }
     }
@@ -61,6 +55,6 @@ class RCTAlphaVideoModule(private val reactContext: ReactApplicationContext) : R
     init {
         val cacheDir = File(reactContext.cacheDir, "http")
         HttpResponseCache.install(cacheDir, 1024 * 1024 * 128)
-        CacheUtil.onCreate(reactContext)
+        CacheUtil.init(reactContext)
     }
 }

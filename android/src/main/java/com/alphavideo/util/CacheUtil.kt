@@ -1,90 +1,70 @@
 package com.alphavideo.util
 
 import android.content.Context
+import com.facebook.react.modules.network.OkHttpClientProvider
+import okhttp3.*
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
 import java.util.*
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.Inflater
 
 object CacheUtil {
     lateinit var cacheDir: String
 
-    private val threadNum = AtomicInteger(0)
-
-//    internal var threadPoolExecutor = Executors.newCachedThreadPool { r ->
-//        Thread(r, "videoParser-Thread-${threadNum.getAndIncrement()}")
-//    }
-    internal var threadPoolExecutor: ExecutorService = Executors.newFixedThreadPool(2)
-
-
-  class FileDownloader {
-        // 解析
-        fun resume(
-            url: URL,
-            complete: (inputStream: InputStream) -> Unit,
+    class FileDownloader {
+        // 下载
+        fun download(
+            cacheKey: String,
+            url: String,
+            complete: (file: File) -> Unit,
             failure: (e: Exception) -> Unit
-        ): () -> Unit {
-            var cancelled = false
-            val cancelBlock = {
-                cancelled = true
-            }
-            threadPoolExecutor.execute {
-                try {
-                    println("================ video file download start ================")
-                    (url.openConnection() as? HttpURLConnection)?.let {
-                        it.connectTimeout = 20 * 1000
-                        it.requestMethod = "GET"
-                        it.connect()
-                        it.inputStream.use { inputStream ->
-                            ByteArrayOutputStream().use { outputStream ->
-                                val buffer = ByteArray(4096)
-                                var count: Int
-                                while (true) {
-                                    if (cancelled) {
-                                        println("================ video file download canceled ================")
-                                        break
-                                    }
-                                    count = inputStream.read(buffer, 0, 4096)
-                                    if (count == -1) {
-                                        break
-                                    }
-                                    outputStream.write(buffer, 0, count)
-                                }
-                                if (cancelled) {
-                                    println("================ video file download canceled ================")
-                                    return@execute
-                                }
-                                ByteArrayInputStream(outputStream.toByteArray()).use {
-                                    println("================ video file download complete ================")
-                                    complete(it)
-                                }
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    println("================ video file download fail ================")
-                    println("error: ${e.message}")
-                    e.printStackTrace()
+        ) {
+            val okHttpClient: OkHttpClient = OkHttpClientProvider.getOkHttpClient()
+            //创建Request对象
+            val request: Request = Request.Builder().url(url).build()
+            //把Request对象封装成call对象
+            val call: Call = okHttpClient.newCall(request)
+            //发起异步请求
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call?, e: IOException) {
                     failure(e)
                 }
-            }
-            return cancelBlock
+
+                override fun onResponse(call: Call?, response: Response) {
+                    val cacheFile: File = findFileByCacheKey(cacheKey)
+                    try {
+                        cacheFile.takeIf { !it.exists() }?.createNewFile()
+                        val inputStream: InputStream? = response.body()?.byteStream()
+                        inputStream?.let { inputStream ->
+                            val outputStream = FileOutputStream(cacheFile)
+                            var len: Int
+                            val bytes = ByteArray(1024 * 10)
+                            while (inputStream.read(bytes).also { len = it } != -1) {
+                                outputStream.write(bytes, 0, len)
+                            }
+                            inputStream.close()
+                            outputStream.close()
+                            complete(cacheFile)
+                        }
+                    } catch (e: IOException) {
+                        cacheFile.delete()
+                        failure(e)
+                    }
+                }
+            })
         }
     }
 
     var fileDownloader = FileDownloader()
 
-    fun onCreate(context: Context) {
-        cacheDir = "${context.cacheDir.absolutePath}/video/"
+    fun init(context: Context) {
+        cacheDir = "${context.externalCacheDir!!.absolutePath}/alpha_video/"
         File(cacheDir).takeIf { !it.exists() }?.mkdirs()
     }
 
-    fun isDir(): Boolean {
+    fun isDirExists(): Boolean {
         return File(cacheDir).exists()
     }
 
@@ -99,7 +79,7 @@ object CacheUtil {
     }
 
 
-    private fun generateCacheKey(str: String): String {
+    private fun removeParams(str: String): String {
         var key: String = str
         if (str.contains("Expires") || str.contains("OSSAccessKeyId") || str.contains("Signature") || str.contains("security\\-token")) {
             key = removeParam(str, "Expires", "OSSAccessKeyId", "Signature", "security\\-token")
@@ -110,7 +90,7 @@ object CacheUtil {
 
 
     fun getCacheKey(string: String): String {
-        val key = generateCacheKey(string)
+        val key = removeParams(string)
         val messageDigest = MessageDigest.getInstance("MD5")
         messageDigest.update(key.toByteArray(charset("UTF-8")))
         val digest = messageDigest.digest()
@@ -121,73 +101,22 @@ object CacheUtil {
         return str
     }
 
-    fun isCacheKey(cacheKey: String): Boolean {
-        return findVideoFile(cacheKey).exists()
+    fun isCached(cacheKey: String): Boolean {
+        return findFileByCacheKey(cacheKey).exists()
     }
 
-    fun findVideoFile(cacheKey: String): File {
+    fun findFileByCacheKey(cacheKey: String): File {
         return File("$cacheDir$cacheKey.mp4")
     }
 
     // 下载mp4到cache
     fun downloadVideoFromUrl(cacheKey: String, url: String, callback: (path: String) -> Unit) {
         // 解析地址
-        fileDownloader.resume(URL(url), { inputStream ->
-            readAsBytes(inputStream)?.let { bytes ->
-                threadPoolExecutor.execute {
-                    findVideoFile(cacheKey).let { cacheFile ->
-                        try {
-                            cacheFile.takeIf { !it.exists() }?.createNewFile()
-                            FileOutputStream(cacheFile).write(bytes)
-                            callback(findVideoFile(cacheKey).path)
-                        } catch (e: Exception) {
-                            println("create cache file fail. $e")
-                            cacheFile.delete()
-                        }
-                    }
-                }
-//                inflate(bytes).let {
-//                    if (callback != null) {
-//                        callback(findVideoFile(cacheKey).path)
-//                    }
-//                }
-            }
-
+        fileDownloader.download(cacheKey, url, { file ->
+            callback(file.absolutePath)
         }, {
             println("缓存失败 = $it")
         })
     }
 
-    private fun readAsBytes(inputStream: InputStream): ByteArray? {
-        ByteArrayOutputStream().use { byteArrayOutputStream ->
-            val byteArray = ByteArray(2048)
-            while (true) {
-                val count = inputStream.read(byteArray, 0, 2048)
-                if (count <= 0) {
-                    break
-                } else {
-                    byteArrayOutputStream.write(byteArray, 0, count)
-                }
-            }
-            return byteArrayOutputStream.toByteArray()
-        }
-    }
-
-    private fun inflate(byteArray: ByteArray): ByteArray? {
-        val inflater = Inflater()
-        inflater.setInput(byteArray, 0, byteArray.size)
-        val inflatedBytes = ByteArray(2048)
-        ByteArrayOutputStream().use { inflatedOutputStream ->
-            while (true) {
-                val count = inflater.inflate(inflatedBytes, 0, 2048)
-                if (count <= 0) {
-                    break
-                } else {
-                    inflatedOutputStream.write(inflatedBytes, 0, count)
-                }
-            }
-            inflater.end()
-            return inflatedOutputStream.toByteArray()
-        }
-    }
 }
