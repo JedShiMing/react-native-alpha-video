@@ -28,15 +28,15 @@ object CacheUtil {
             val call: Call = okHttpClient.newCall(request)
             //发起异步请求
             call.enqueue(object : Callback {
-                override fun onFailure(call: Call?, e: IOException) {
+                override fun onFailure(call: Call, e: IOException) {
                     failure(e)
                 }
 
-                override fun onResponse(call: Call?, response: Response) {
+                override fun onResponse(call: Call, response: Response) {
                     val cacheFile: File = findFileByCacheKey(cacheKey)
                     try {
                         cacheFile.takeIf { !it.exists() }?.createNewFile()
-                        val inputStream: InputStream? = response.body()?.byteStream()
+                        val inputStream: InputStream? = response.body?.byteStream()
                         inputStream?.let { inputStream ->
                             val outputStream = FileOutputStream(cacheFile)
                             var len: Int
